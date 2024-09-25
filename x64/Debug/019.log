@@ -1,0 +1,5 @@
+﻿  ChessEngine.cpp
+E:\code\019\ChessEngine.cpp(32,8): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+  testmain.cpp
+  正在生成代码...
+  019.vcxproj -> E:\code\019\x64\Debug\019.exe
