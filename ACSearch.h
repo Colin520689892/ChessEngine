@@ -1,9 +1,9 @@
 #pragma once
 #include "root.h"
 
-constexpr int N = 50;
-constexpr int ALPHABET = 2;
-constexpr char convert = '0';
+constexpr int N = 50;//表示节点数
+constexpr int ALPHABET = 3;//子节点数
+constexpr char convert = '0';//转换成数字
 class AhoCorasick {
 private:
 	int trie[N][ALPHABET];

@@ -12,7 +12,7 @@ struct HistoryItem {
 
 class PossiblePositionManager {
 public:
-	void add(int board[15][15], const Position& p);
+	void add(char board[15][15], const Position& p);
 	void Rollback();
 	const std::set<Position>& get();
 	void clear();

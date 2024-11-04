@@ -7,6 +7,8 @@
 namespace ChessEngine {
 
 	//用于ac自动机
+	int DEPTH = 7
+		;//递归深度
 	struct Pattern {
 		std::string pattern;
 		int score;
@@ -37,18 +39,18 @@ namespace ChessEngine {
 	//可能位置的管理
 	PossiblePositionManager ppm;
 	//棋盘
-	int board[BOARD_WIDTH][BOARD_WIDTH];
+	char board[BOARD_WIDTH][BOARD_WIDTH];
 	int winner;
 	std::stack<Position>moves;
 	Position searchResult;
 	int scores[2][72];//保存棋局分数(2个角色72行,包括横竖撇捺)
 	int allScore[2];//局面总评分,两角色
 
-	char which(int who, int role) {
+	char which(char who, int role) {
 		return (who == role ? '1' : (who == 0 ? '0' : '2'));
 	}
 	//这个是对点p周围的10个点进行评分
-	int evaluatePoint(int board[BOARD_WIDTH][BOARD_WIDTH], Position p) {
+	int evaluatePoint(char board[BOARD_WIDTH][BOARD_WIDTH], Position p) {
 		int result=0;
 		std::string lines[4], lines1[4];//lines是Human,lines1是Computer
 		//因为它模式串最多有6个字符,所以扫描点p的左右5个点即可
@@ -69,15 +71,16 @@ namespace ChessEngine {
 			i == p.x ? lines[3].push_back('1') : lines[3].push_back(which(board[i][j], HUMAN));
 			i == p.x ? lines1[3].push_back('1') : lines1[3].push_back(which(board[i][j], COMPUTER));
 		}
+		ll re1 = 0, re2 = 0;
 		for (int i = 0; i < 4; i++) {
-			std::vector<int>f = ac.search(lines[i]);
-			for (int j = 0; j < Q; j++)result += patterns[j].score * f[end[j]];
-			f = ac.search(lines1[i]);
-			for (int j = 0; j < Q; j++)result += patterns[j].score * f[end[j]];
+			std::vector<int>f = ac.search(lines[i]);//人类
+			for (int j = 0; j < Q; j++)re1 += patterns[j].score * f[end[j]];
+			f = ac.search(lines1[i]);//电脑,电脑所拿的分数
+			for (int j = 0; j < Q; j++)re2 += patterns[j].score * f[end[j]];
 		}
-		return result;
+		return re1 + re2;
 	}
-	void printBoard(int board[BOARD_WIDTH][BOARD_WIDTH]) {
+	void printBoard(char board[BOARD_WIDTH][BOARD_WIDTH]) {
 		int i, j;
 		for (i = 0; i < BOARD_WIDTH; i++) {
 			for (j = 0; j < BOARD_WIDTH; j++) {
@@ -89,8 +92,8 @@ namespace ChessEngine {
 	int getscore(Role role) {
 		return (role == HUMAN ? allScore[0] : allScore[1]);
 	}
-	//这个是对全局评分
-	void updateScore(int board[BOARD_WIDTH][BOARD_WIDTH], Position p) {
+	//这个是对全局评分,updatescore就是更新allscore的
+	void updateScore(char board[BOARD_WIDTH][BOARD_WIDTH], Position p) {
 		std::string lines[4],lines1[4];//lines是Human,lines1是Computer
 		//那么对于人类来说,如果该点是'1',表示自己,所以是1,其它的另外判断
 		//对于电脑来说,如果该点是1,表示对手,如果不是1,判断它是不是0
@@ -103,8 +106,8 @@ namespace ChessEngine {
 			lines1[1].push_back(which(board[p.x][i],COMPUTER));
 		}
 		for (int i = p.x - std::min(p.x, p.y), j = p.y - std::min(p.x, p.y); i < BOARD_WIDTH && j < BOARD_WIDTH; i++, j++) {
-			lines[2].push_back(which(board[p.x][i],HUMAN));
-			lines1[2].push_back(which(board[p.x][i],COMPUTER));
+			lines[2].push_back(which(board[i][j],HUMAN));
+			lines1[2].push_back(which(board[i][j],COMPUTER));
 		}
 		for (int i = p.x + std::min(p.y, BOARD_WIDTH - 1 - p.x), j = p.y - std::min(p.y, BOARD_WIDTH - 1 - p.x); i >= 0 && j < BOARD_WIDTH; i--, j++) {
 			lines[3].push_back(which(board[i][j],HUMAN));
@@ -148,22 +151,22 @@ namespace ChessEngine {
 		}
 	}
 	//首先是一个棋盘,然后是递归的深度,
-	int abSearch(int board[BOARD_WIDTH][BOARD_WIDTH], int depth,int alpha,int beta,Role currentSearchRole) {
+	int abSearch(char board[BOARD_WIDTH][BOARD_WIDTH], int depth,int alpha,int beta,Role currentSearchRole) {
 		Flag flag = ALPHA;
 		int score = z.get(depth, alpha, beta);
-		if (score != UNKNOWN_SCORE && depth != DEPTH)return score;//分数已知,当深度到达最大深度的时候需要更加细致的评分
-		int score1 = getscore(currentSearchRole);
-		int score2 = getscore(currentSearchRole == HUMAN ? COMPUTER : HUMAN);
-		if (score1 >= 50000)return MAX_SCORE - 1000 - (DEPTH - depth);
+		if (score != UNKNOWN_SCORE && depth != DEPTH)return score;
+		int score1 = getscore(currentSearchRole);//拿到当前的分数,0是人类的,1是电脑的
+		int score2 = getscore(currentSearchRole == HUMAN ? COMPUTER : HUMAN);//不管怎么样,当前局面的分数都是电脑减去人类
+		if (score1 >= 50000)return MAX_SCORE - 1000 - (DEPTH - depth);//如果玩家的分数和
 		if (score2 >= 50000)return MIN_SCORE + 1000 + (DEPTH - depth);
-		if (depth == 0) {
+		if (depth == 0) {//这个地方逻辑是对的,局面的分数是由电脑的分数减去玩家的分数,如果它是最底下一层,那么它是被计算过的确切值
 			z.add(depth, score1 - score2, EXACT);
 			return score1 - score2;
 		}
 		int count = 0;
 		std::set<Position>possiblePosition;
 		const std::set<Position>&tmpPossiblePosition = ppm.get();
-		std::set<Position>::iterator iter;
+		std::set<Position>::iterator iter;//而set是从小排到大的,所以应该用人类减去电脑
 		for (iter = tmpPossiblePosition.begin(); iter != tmpPossiblePosition.end(); iter++) {
 			possiblePosition.insert(Position(iter->x, iter->y, evaluatePoint(board, *iter)));
 		}
@@ -176,29 +179,33 @@ namespace ChessEngine {
 			p.score = 0;
 			ppm.add(board, p);//4
 			int val = -abSearch(board, depth - 1, -beta, -alpha, currentSearchRole == HUMAN ? COMPUTER : HUMAN);
+			if (depth == DEPTH)
+				std::cout << "score(" << p.x << "," << p.y << "):" << val << "\n";
 			ppm.Rollback();//4
 			board[p.x][p.y] = 0;//1
 			z.CurrentZVal ^= z.BoardZVal[currentSearchRole - 1][p.x][p.y];//2
 			updateScore(board, p);//3
-			if (val >= beta) {
-				z.add(depth, beta, BETA);
+			if (val >= beta) {//这个点计算出来的值是如果大于该点,那说明要剪枝
+				z.add(depth, beta, BETA);//这个时候要剪枝了,对这个说明alpha已经大于beta了,那么这个点至少是16
 				return beta;
 			}
-			if (val > alpha) {
-				flag = EXACT;
+			if (val > alpha) {//这个点计算出来的值如果大于alpha值
+				flag = EXACT;//说明它能搜到一个更好的情况,且没有超过beta的范围
 				alpha = val;
 				if (depth == DEPTH)searchResult = p;
 			}
 			count++;
 			if (count >= 9)break;
 		}
-		z.add(depth, alpha, flag);
+		z.add(depth, alpha, flag);//将所有点都搜完了,却没有找到更大的那说明这个点至多是16
 		return alpha;
 	}
 	void print() {
 		printBoard(board);
 	}
-	Position getGoodMove(int board[BOARD_WIDTH][BOARD_WIDTH]) {
+	Position getGoodMove(char board[BOARD_WIDTH][BOARD_WIDTH]) {
+		//一开始是电脑,那么应该按照人类-电脑从小到大排序,然后向下递归以后,alpha=-beta.
+		//原本beta是求人类-电脑的最大值,现在-beta变成了求电脑减去人类的最小值
 		int score = abSearch(board, DEPTH, MIN_SCORE, MAX_SCORE, COMPUTER);
 		if (score >= MAX_SCORE - 1000 - 1)winner = COMPUTER;
 		else if (score <= MIN_SCORE + 1000 + 1)winner = HUMAN;
@@ -206,9 +213,11 @@ namespace ChessEngine {
 	}
 	void init() {
 		//将模式串都放到ac自动机里,end[i]表示每个模式串的结束节点位置
+		winner = -1;
 		for (int i = 0; i < Q; i++) end[i]=ac.add(patterns[i].pattern);
 		ac.work();//生成fail指针
 		z.init();//然后初始化Zobrist哈希表
+		ppm.clear();
 	}
 
 
@@ -216,7 +225,7 @@ namespace ChessEngine {
 	//一下是对外接口的实现------------------------------------------------------------------------------------------------------
 	//在开始之前,一些初始化工作
 	void beforeStart() {
-		memset(board, EMPTY, BOARD_WIDTH * BOARD_WIDTH * sizeof(char));//初始化borad
+		memset(board, Role_EMPTY, BOARD_WIDTH * BOARD_WIDTH * sizeof(char));//初始化borad
 		memset(scores, 0, sizeof(scores));
 		init();
 	}
@@ -224,6 +233,14 @@ namespace ChessEngine {
 		if (winner == HUMAN)return 0;
 		if (winner == COMPUTER)return 1;
 		return -1;
+	}
+
+	void dian() {
+		moves.push(Position(7, 7));
+		board[7][7] = COMPUTER;
+		z.CurrentZVal ^= z.BoardZVal[COMPUTER - 1][7][7];
+		ppm.add(board, Position(7, 7));
+		updateScore(board, { 7,7 });
 	}
 
 	std::string takeBack() {//将棋盘每个字符按顺序拼凑成字符串并返回
@@ -240,14 +257,14 @@ namespace ChessEngine {
 		Position previousPosition = moves.top();//moves存的是走的步数,
 		moves.pop();
 		z.CurrentZVal ^= z.BoardZVal[COMPUTER - 1][previousPosition.x][previousPosition.y];
-		board[previousPosition.x][previousPosition.y] = EMPTY;
+		board[previousPosition.x][previousPosition.y] = Role_EMPTY;
 		updateScore(board, previousPosition);
 		ppm.Rollback();
 
 		previousPosition = moves.top();
 		moves.pop();
 		z.CurrentZVal ^= z.BoardZVal[HUMAN - 1][previousPosition.x][previousPosition.y];
-		board[previousPosition.x][previousPosition.y] = EMPTY;
+		board[previousPosition.x][previousPosition.y] = Role_EMPTY;
 		updateScore(board, previousPosition);
 		
 		ppm.Rollback();
@@ -263,6 +280,9 @@ namespace ChessEngine {
 	
 	Position getLastPosition() {
 		return searchResult;
+	}
+	void setLevel(int level) {
+		DEPTH = level;
 	}
 
 	std::string nextStep(int x, int y) {

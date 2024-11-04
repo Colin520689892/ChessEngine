@@ -2,6 +2,7 @@
 
 int main() {
 	ChessEngine::beforeStart();
+	ChessEngine::dian();
 	while (ChessEngine::isSomeOneWin() == -1) {
 		int x, y;
 		std::cin >> x >> y;

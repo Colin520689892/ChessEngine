@@ -8,7 +8,7 @@ bool IsInBoard(int x, int y) {//判断是否在棋盘中
 }
 
 
-void PossiblePositionManager::add(int board[15][15], const Position& p) {
+void PossiblePositionManager::add(char board[15][15], const Position& p) {
 	//人类下棋,将人类的点传给这个地方
 	std::set<Position>addedPostions;//可能的位置是一组不重复的位置
 	for (int i = 0; i < dir.size(); i++) {//将p点周围8个方向为空的点设为possiblePosition
@@ -16,7 +16,7 @@ void PossiblePositionManager::add(int board[15][15], const Position& p) {
 		int px = p.x + dir[i].first;
 		int py = p.y + dir[i].second;
 		if (!IsInBoard(px,py))continue;//如果这个点不在棋盘中,就继续
-		if (board[px][py] == ChessEngine::EMPTY) {
+		if (board[px][py] == ChessEngine::Role_EMPTY) {
 			Position pos(px, py);
 			std::pair<std::set<Position>::iterator, bool>insertResult = currentPPos.insert(pos);
 			if (insertResult.second)addedPostions.insert(pos);//如果当前可能落子的点不存在,就将这个点插入到add里

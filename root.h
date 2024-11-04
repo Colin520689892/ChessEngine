@@ -6,7 +6,7 @@
 #define UNKNOWN_SCORE 10000001
 #define MAX_SCORE (10000000)
 #define MIN_SCORE (-10000000)
-constexpr int DEPTH = 7;//µ›πÈ…Ó∂»
+
 #include<iostream>
 #include<vector>
 #include<set>

@@ -6,7 +6,11 @@ using ll = long long;
 //生成一个64位的随机数
 
 //ALPHA的边界,BETA的边界,EXACT确切的值,EMPTY空条目
-enum Flag { ALPHA = 0, BETA = 1, EXACT = 2, EMPTY = 3 };
+enum Flag { ALPHA = 0, BETA = 1, EXACT = 2, Flag_EMPTY = 3 };
+//如果一个节点被标记了BETA,那说明它至少是16
+//如果一个节点被标记了ALPHA,那说明它最多是16
+//如果一个节点是EXACT,那说明它是准确值16
+
 
 struct HashItem {
 	ll ZVal;//ZobristValue的值
